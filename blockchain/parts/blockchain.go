@@ -27,6 +27,41 @@ type BlockChainIterator struct {
 	Db          *bolt.DB
 }
 
+//MineBlock mine a new Block
+func (bc *BlockChain) MineBlock(transactions []*Transaction) {
+	var lastHash []byte
+
+	err := bc.Db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(blocksBucket))
+		lastHash = b.Get([]byte("l"))
+
+		return nil
+	})
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	newBlock := NewBlock(transactions, lastHash)
+
+	err = bc.Db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(blocksBucket))
+		err := b.Put(newBlock.Hash, newBlock.Serialize())
+		if err != nil {
+			log.Panic(err)
+		}
+
+		err = b.Put([]byte("l"), newBlock.Hash)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		bc.Tip = newBlock.Hash
+
+		return nil
+	})
+}
+
 //dbExists check there is a .db or not
 func dbExists() bool {
 	if _, err := os.Stat(dbFile); os.IsNotExist(err) {
@@ -36,7 +71,7 @@ func dbExists() bool {
 }
 
 //NewBlockChain creates new blockchain
-func NewBlockChain() *BlockChain {
+func NewBlockChain(address string) *BlockChain {
 	if dbExists() == false {
 		fmt.Println("No existing blockchain found. Create one first.")
 		os.Exit(1)
@@ -125,6 +160,7 @@ func (bc *BlockChain) Iterator() *BlockChainIterator {
 }
 
 //Next move iterator to the next
+//.db is opened in this function
 func (i *BlockChainIterator) Next() *Block {
 	var block *Block
 

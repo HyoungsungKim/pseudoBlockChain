@@ -12,7 +12,7 @@ import (
 //Block Define basic block struct
 type Block struct {
 	TimeStamp     int64
-	Transaction   []*Transaction
+	Transactions  []*Transaction
 	PrevBlockHash []byte
 	Hash          []byte
 	Nonce         int
@@ -22,7 +22,7 @@ type Block struct {
 func NewBlock(transactions []*Transaction, PrevBlockHash []byte) *Block {
 	block := &Block{
 		TimeStamp:     time.Now().Unix(),
-		Transaction:   transactions,
+		Transactions:  transactions,
 		PrevBlockHash: PrevBlockHash,
 		Hash:          []byte{},
 		Nonce:         0,
@@ -80,7 +80,7 @@ func (b *Block) HashTransactions() []byte {
 
 	//https://www.dotnetperls.com/2d-go
 	//Good example to understand 2d slice append
-	for _, tx := range b.Transaction {
+	for _, tx := range b.Transactions {
 		txHashes = append(txHashes, tx.ID)
 	}
 	txHash = sha256.Sum256(bytes.Join(txHashes, []byte{}))
