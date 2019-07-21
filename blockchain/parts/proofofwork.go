@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	targetBits = 16
-	maxNonce   = math.MaxInt64
+	targetBits		= 16
+	maxNonce	= math.MaxInt64
 )
 
 //ProofOfWork define basic struct for PoW

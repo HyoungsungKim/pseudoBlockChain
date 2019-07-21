@@ -66,6 +66,8 @@ func (cli *CLI) send(from, to string, amount int) {
 	defer bc.Db.Close()
 
 	tx := NewUTXOTransaction(from, to, amount, bc)
+	//After finishing transaction, process consensus too
+	//As a result, In this blockchain, a block can has only 1 transaction
 	bc.MineBlock([]*Transaction{tx})
 	fmt.Println("Success!")
 }
