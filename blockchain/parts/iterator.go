@@ -6,6 +6,12 @@ import (
 	"github.com/boltdb/bolt"
 )
 
+//BlockChainIterator define struct for blockchain iteration
+type BlockChainIterator struct {
+	CurrentHash []byte
+	Db          *bolt.DB
+}
+
 //Iterator iterate blockchain
 func (bc *BlockChain) Iterator() *BlockChainIterator {
 	bci := &BlockChainIterator{

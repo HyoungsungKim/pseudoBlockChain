@@ -42,6 +42,7 @@ func Base58Encode(input []byte) Base58 {
 	return result
 }
 
+//Base58Decode decode Base58 to byte
 func Base58Decode(input Base58) []byte {
 	result := big.NewInt(0)
 	zeroBytes := 0

@@ -24,7 +24,12 @@ func (out *TxOutput) IsLockedWithKey(pubKeyHash []byte) bool {
 	return bytes.Compare(out.PubKeyHash, pubKeyHash) == 0
 }
 
-//CanBeUnlockedWith compare unlockingData with TxOutput's ScriptPubkey
-func (out *TxOutput) CanBeUnlockedWith(unlockingData string) bool {
-	return out.ScriptPubKey == unlockingData
+//NewTxOutput set *TxOutput
+func NewTxOutput(value int, address string) *TxOutput {
+	txo := &TxOutput{
+		Value:      value,
+		PubKeyHash: nil,
+	}
+	txo.Lock([]byte(address))
+	return txo
 }

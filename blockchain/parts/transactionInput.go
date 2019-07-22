@@ -17,8 +17,3 @@ func (in *TxInput) UseKey(pubKeyHash []byte) bool {
 	lockingHash := HashPubKey(in.PubKey)
 	return bytes.Compare(lockingHash, pubKeyHash) == 0
 }
-
-//CanUnlockOutputWith compare TxInput's ScriptSig with unlockingData
-func (in *TxInput) CanUnlockOutputWith(unlockingData string) bool {
-	return in.ScriptSig == unlockingData
-}

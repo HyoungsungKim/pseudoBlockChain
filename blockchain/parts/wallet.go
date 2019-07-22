@@ -1,11 +1,14 @@
 package parts
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
 	"log"
+
+	"golang.org/x/crypto/ripemd160"
 )
 
 const (
@@ -18,11 +21,6 @@ const (
 type Wallet struct {
 	PrivateKey ecdsa.PrivateKey
 	PublicKey  []byte
-}
-
-//Wallets struct define (string key - *Wallet value) map
-type Wallets struct {
-	Wallets map[string]*Wallet
 }
 
 //NewWallet construct *Wallet
@@ -83,4 +81,15 @@ func (w Wallet) GetAddress() []byte {
 	address := Base58Encode(fullPayload)
 
 	return address
+}
+
+//ValidateAddress get checksum and compare it is correct
+func ValidateAddress(address string) bool {
+	pubKeyHash := Base58Decode([]byte(address))
+	actualChecksum := pubKeyHash[len(pubKeyHash)-addressChecksumLen:]
+	version := pubKeyHash[0]
+	pubKeyHash = pubKeyHash[1 : len(pubKeyHash)-addressChecksumLen]
+	targetChecksum := checksum(append([]byte{version}, pubKeyHash...))
+
+	return bytes.Compare(actualChecksum, targetChecksum) == 0
 }

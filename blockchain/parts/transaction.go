@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"strings"
 )
 
 const subsidy = 10
@@ -20,6 +21,31 @@ type Transaction struct {
 	ID   []byte
 	Vin  []TxInput
 	Vout []TxOutput
+}
+
+//Serialize serialize transaction
+func (tx Transaction) Serialize() []byte {
+	var encoded bytes.Buffer
+
+	enc := gob.NewEncoder(&encoded)
+	err := enc.Encode(tx)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	return encoded.Bytes()
+}
+
+// Hash generate sha256 using tx without ID
+func (tx *Transaction) Hash() []byte {
+	var hash [32]byte
+
+	txCopy := *tx
+	txCopy.ID = []byte{}
+
+	hash = sha256.Sum256(txCopy.Serialize())
+
+	return hash[:]
 }
 
 //SetID literally set transaction ID
@@ -38,6 +64,30 @@ func (tx *Transaction) SetID() {
 	tx.ID = hash[:]
 }
 
+//String set information of tx to sting
+func (tx Transaction) String() string {
+	var lines []string
+
+	lines = append(lines, fmt.Sprintf("--- Transaction %x:", tx.ID))
+
+	for i, input := range tx.Vin {
+
+		lines = append(lines, fmt.Sprintf("     Input %d:", i))
+		lines = append(lines, fmt.Sprintf("       TXID:      %x", input.Txid))
+		lines = append(lines, fmt.Sprintf("       Out:       %d", input.Vout))
+		lines = append(lines, fmt.Sprintf("       Signature: %x", input.Signature))
+		lines = append(lines, fmt.Sprintf("       PubKey:    %x", input.PubKey))
+	}
+
+	for i, output := range tx.Vout {
+		lines = append(lines, fmt.Sprintf("     Output %d:", i))
+		lines = append(lines, fmt.Sprintf("       Value:  %d", output.Value))
+		lines = append(lines, fmt.Sprintf("       Script: %x", output.PubKeyHash))
+	}
+
+	return strings.Join(lines, "\n")
+}
+
 //NewCoinbaseTx mint coinbase transaction of miner
 func NewCoinbaseTx(to, data string) *Transaction {
 	if data == "" {
@@ -48,19 +98,16 @@ func NewCoinbaseTx(to, data string) *Transaction {
 		Txid: []byte{},
 		//Vout = -1 means it is coinbase transaction
 		Vout:      -1,
-		ScriptSig: data,
+		Signature: nil,
+		PubKey:    []byte(data),
 	}
-	txout := TxOutput{
-		Value:        subsidy,
-		ScriptPubKey: to,
-	}
-
+	txout := NewTxOutput(subsidy, to)
 	tx := Transaction{
 		ID:   nil,
 		Vin:  []TxInput{txin},
-		Vout: []TxOutput{txout},
+		Vout: []TxOutput{*txout},
 	}
-	tx.SetID()
+	tx.ID = tx.Hash()
 
 	return &tx
 
@@ -71,11 +118,22 @@ func (tx Transaction) IsCoinbase() bool {
 	return len(tx.Vin) == 1 && len(tx.Vin[0].Txid) == 0 && tx.Vin[0].Vout == -1
 }
 
+//NewUTXOTransaction create new utxo transaction
 func NewUTXOTransaction(from, to string, amount int, bc *BlockChain) *Transaction {
 	var inputs []TxInput
 	var outputs []TxOutput
 
-	acc, validOutputs := bc.FindSpendableOutputs(from, amount)
+	//Read all of wallets
+	wallets, err := NewWallets()
+	if err != nil {
+		log.Panic(err)
+	}
+	//get 1 wallet
+	wallet := wallets.GetWallet(from)
+	pubKeyHash := HashPubKey(wallet.PublicKey)
+
+	//accumulated, validaoutput
+	acc, validOutputs := bc.FindSpendableOutputs(pubKeyHash, amount)
 
 	if acc < amount {
 		log.Panic("ERROR : Not enough funds")
@@ -92,16 +150,17 @@ func NewUTXOTransaction(from, to string, amount int, bc *BlockChain) *Transactio
 			input := TxInput{
 				Txid:      txID,
 				Vout:      out,
-				ScriptSig: from,
+				Signature: nil,
+				PubKey:    wallet.PublicKey,
 			}
 			inputs = append(inputs, input)
 		}
 	}
 
-	outputs = append(outputs, TxOutput{Value: amount, ScriptPubKey: to})
+	outputs = append(outputs, *NewTxOutput(amount, to))
 	if acc > amount {
 		//Return change to sender
-		outputs = append(outputs, TxOutput{Value: acc - amount, ScriptPubKey: from})
+		outputs = append(outputs, *NewTxOutput(acc-amount, from))
 	}
 
 	tx := Transaction{
@@ -109,7 +168,8 @@ func NewUTXOTransaction(from, to string, amount int, bc *BlockChain) *Transactio
 		Vin:  inputs,
 		Vout: outputs,
 	}
-	tx.SetID()
+	tx.ID = tx.Hash()
+	bc.SignTransaction(&tx, wallet.PrivateKey)
 
 	return &tx
 }
@@ -144,7 +204,7 @@ func (tx *Transaction) TrimmedCopy() Transaction {
 	return txCopy
 }
 
-//What is sign?
+//Sign Set signature of receiver
 func (tx *Transaction) Sign(privKey ecdsa.PrivateKey, prevTxs map[string]Transaction) {
 	//Coinbase transactions are not signed because there are no real inputs in them.
 	if tx.IsCoinbase() {
