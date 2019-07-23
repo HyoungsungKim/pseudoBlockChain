@@ -1,6 +1,10 @@
 package parts
 
-import "bytes"
+import (
+	"bytes"
+	"encoding/gob"
+	"log"
+)
 
 //TxOutput includes value and PubKeyHash
 type TxOutput struct {
@@ -32,4 +36,30 @@ func NewTxOutput(value int, address string) *TxOutput {
 	}
 	txo.Lock([]byte(address))
 	return txo
+}
+
+type TxOutputs struct {
+	Outputs []TxOutput
+}
+
+func (outs TxOutputs) Serialize() []byte {
+	var buff bytes.Buffer
+	enc := gob.NewEncoder(&buff)
+	err := enc.Encode(outs)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	return buff.Bytes()
+}
+
+func DeserializeOutputs(data []byte) TxOutputs {
+	var outputs TxOutputs
+
+	dec := gob.NewDecoder(bytes.NewReader(data))
+	err := dec.Decode(&outputs)
+	if err != nil {
+		log.Panic(err)
+	}
+	return outputs
 }

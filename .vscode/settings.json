@@ -3,6 +3,7 @@
         "block",
         "deserialize",
         "txid",
+        "verzion",
         "vout"
     ]
 }

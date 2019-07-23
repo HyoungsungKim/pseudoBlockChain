@@ -16,11 +16,11 @@ type Wallets struct {
 }
 
 //NewWallets generate new wallets
-func NewWallets() (*Wallets, error) {
+func NewWallets(nodeID string) (*Wallets, error) {
 	wallets := Wallets{}
 	wallets.Wallets = make(map[string]*Wallet)
 
-	err := wallets.LoadFromFile()
+	err := wallets.LoadFromFile(nodeID)
 
 	return &wallets, err
 }
@@ -51,7 +51,7 @@ func (ws Wallets) GetWallet(address string) Wallet {
 }
 
 //LoadFromFile from .dat file
-func (ws *Wallets) LoadFromFile() error {
+func (ws *Wallets) LoadFromFile(nodeID string) error {
 	if _, err := os.Stat(walletFile); os.IsNotExist(err) {
 		return err
 	}
@@ -74,8 +74,9 @@ func (ws *Wallets) LoadFromFile() error {
 }
 
 //SaveToFile save file to .dat
-func (ws Wallets) SaveToFile() {
+func (ws Wallets) SaveToFile(nodeID string) {
 	var content bytes.Buffer
+	walletFile := fmt.Sprintf(walletFile, nodeID)
 	gob.Register(elliptic.P256())
 
 	encoder := gob.NewEncoder(&content)
