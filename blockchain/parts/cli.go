@@ -173,9 +173,10 @@ func (cli *CLI) validateArgs() {
 func (cli *CLI) Run() {
 	cli.validateArgs()
 
+	os.Setenv("NODE_ID", "168.0.0.1:3000")
 	nodeID := os.Getenv("NODE_ID")
 	if nodeID == "" {
-		fmt.Printf("NODE_ID env. var is not set!")
+		fmt.Printf("NODE_ID env. var is not set!\n")
 		os.Exit(1)
 	}
 

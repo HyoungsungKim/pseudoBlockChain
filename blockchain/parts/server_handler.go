@@ -72,7 +72,7 @@ func handleBlock(request []byte, bc *BlockChain) {
 	fmt.Println("received a new block!")
 	bc.AddBlock(block)
 
-	fmt.Printf("Added block &x\n", block.Hash)
+	fmt.Printf("Added block %x\n", block.Hash)
 
 	if len(blocksInTransit) > 0 {
 		blockHash := blocksInTransit[0]

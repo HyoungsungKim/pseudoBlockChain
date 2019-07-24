@@ -25,11 +25,14 @@ type BlockChain struct {
 	Db  *bolt.DB
 }
 
+//AddBlock add block
 func (bc *BlockChain) AddBlock(block *Block) {
 	err := bc.Db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBucket))
 		blockInDb := b.Get(block.Hash)
 
+		//already existed block
+		//Therefore return nil
 		if blockInDb != nil {
 			return nil
 		}
@@ -44,6 +47,7 @@ func (bc *BlockChain) AddBlock(block *Block) {
 		lastBlockData := b.Get(lastHash)
 		lastBlock := DeserializeBlock(lastBlockData)
 
+		//Only valid when block.Height is lastBlock.Height + 1
 		if block.Height > lastBlock.Height {
 			err = b.Put([]byte("l"), block.Hash)
 			if err != nil {
@@ -59,6 +63,7 @@ func (bc *BlockChain) AddBlock(block *Block) {
 	}
 }
 
+//GetBlock return block
 func (bc *BlockChain) GetBlock(blockHash []byte) (Block, error) {
 	var block Block
 
@@ -81,6 +86,7 @@ func (bc *BlockChain) GetBlock(blockHash []byte) (Block, error) {
 	return block, nil
 }
 
+//GetBlockHashes return every block's hashes
 func (bc *BlockChain) GetBlockHashes() [][]byte {
 	var blocks [][]byte
 	bci := bc.Iterator()
@@ -95,6 +101,7 @@ func (bc *BlockChain) GetBlockHashes() [][]byte {
 	return blocks
 }
 
+//GetBestHeight return height of last block
 func (bc *BlockChain) GetBestHeight() int {
 	var lastBlock Block
 
@@ -252,6 +259,7 @@ func CreateBlockChain(address string) *BlockChain {
 	return &bc
 }
 
+//FindUTXO return UTXO
 func (bc *BlockChain) FindUTXO() map[string]TxOutputs {
 	UTXO := make(map[string]TxOutputs)
 	spentTxOs := make(map[string][]int)

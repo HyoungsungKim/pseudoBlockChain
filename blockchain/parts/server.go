@@ -36,6 +36,7 @@ func requestBlocks() {
 	}
 }
 
+//StartServer start server
 func StartServer(nodeID, minerAddress string) {
 	nodeAddress = fmt.Sprintf("localhost:%s", nodeID)
 	miningAddress = minerAddress
